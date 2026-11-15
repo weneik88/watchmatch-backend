@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ru" data-theme="aurora" data-bg="blobs" data-motion="full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>WatchMatch — смотрим вместе</title>
+  <meta name="description" content="Смотри видео синхронно с друзьями, где бы вы ни были: комнаты, чат, реакции.">
+  <meta name="theme-color" content="#070b1f">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237c5cff'/%3E%3Cstop offset='1' stop-color='%2319d3c5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='19' fill='url(%23g)'/%3E%3Cpath d='M25 19l22 13-22 13z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="config.js"></script>
+</head>
+<body>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><polygon points="7 4 20 12 7 20 7 4" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1.2" fill="currentColor"/><rect x="14" y="4" width="4" height="16" rx="1.2" fill="currentColor"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+</svg>
+
+<div class="bg" id="bg" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div class="stars" id="stars"><i></i><i></i></div>
+  <div class="grid"></div>
+</div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="rain" aria-hidden="true"></div>
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<main id="app">
+
+  <!-- ===================== HOME ===================== -->
+  <section id="view-home" class="view">
+    <header class="topbar glass">
+      <button class="brand" id="brand" aria-label="WatchMatch">
+        <span class="logo"><svg class="ic"><use href="#i-play"/></svg></span><span class="t">WatchMatch</span>
+      </button>
+      <div class="top-actions">
+        <div id="user-chip" class="chip inner" hidden><img class="av sm" id="user-avatar" alt=""><span id="user-name"></span></div>
+        <button class="icon-btn" id="open-settings" aria-label="Настройки"><svg class="ic"><use href="#i-sliders"/></svg></button>
+      </div>
+    </header>
+
+    <div class="hero">
+      <h1 class="hero-title">Смотрите <span class="grad">вместе</span>,<br>даже на расстоянии</h1>
+      <p class="hero-sub" id="tagline"></p>
+
+      <div class="hero-card glass">
+        <div class="login-box" id="login-box" hidden>
+          <div id="g-btn"></div>
+          <small>Войди через Google, чтобы сохранить тему, ник и аватар на всех устройствах</small>
+        </div>
+        <div class="field" id="name-field">
+          <label for="guest-name">Твоё имя</label>
+          <input class="input" id="guest-name" maxlength="24" placeholder="Как тебя звать?" autocomplete="nickname">
+        </div>
+        <button class="btn primary big" id="create-room">Создать комнату</button>
+        <div class="or"><span>или</span></div>
+        <form class="join" id="join-form">
+          <input class="input" id="join-code" placeholder="Код или ссылка на комнату" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <button class="btn" type="submit">Войти</button>
+        </form>
+      </div>
+
+      <ul class="features">
+        <li class="glass" style="--i:0"><b>⏱️</b><strong>Синхронно до секунды</strong><br><span>Пауза, перемотка и скорость у всех одновременно. Новичок сразу попадает в нужный момент.</span></li>
+        <li class="glass" style="--i:1"><b>💬</b><strong>Чат и реакции</strong><br><span>Летящие эмодзи прямо поверх видео, конфетти, попкорн и вечеринки на весь экран.</span></li>
+        <li class="glass" style="--i:2"><b>🔗</b><strong>YouTube и свои ссылки</strong><br><span>Вставь ссылку на YouTube или прямую ссылку на видеофайл. Всё остальное сделаем сами.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===================== ROOM ===================== -->
+  <section id="view-room" class="view" hidden>
+    <header class="topbar glass room-top dim">
+      <button class="icon-btn" id="leave" aria-label="Выйти из комнаты"><svg class="ic"><use href="#i-back"/></svg></button>
+      <div class="room-id">
+        <span class="dot wait" id="conn" title="Соединение"></span>
+        <b id="room-code"></b>
+        <button class="icon-btn sm" id="copy-link" aria-label="Скопировать ссылку"><svg class="ic"><use href="#i-link"/></svg></button>
+      </div>
+      <div class="avatars" id="avatars"></div>
+      <div class="top-actions">
+        <button class="icon-btn" id="open-settings-room" aria-label="Настройки"><svg class="ic"><use href="#i-sliders"/></svg></button>
+      </div>
+    </header>
+
+    <div class="room-grid">
+      <div class="stage">
+        <form class="source glass dim" id="source-form">
+          <input class="input" id="source-input" placeholder="Ссылка на YouTube или видео (.mp4, .webm)" autocomplete="off" spellcheck="false">
+          <button class="btn primary" type="submit">Загрузить</button>
+        </form>
+
+        <div class="player frame" id="player-wrap">
+          <div id="yt-host" hidden><div id="yt-player"></div></div>
+          <video id="video" playsinline preload="auto" hidden></video>
+          <div class="empty" id="player-empty">
+            <div class="big">🍿</div>
+            <h2>Тут пока пусто</h2>
+            <p id="empty-text">Вставь ссылку на видео, и оно появится у всех в комнате.</p>
+          </div>
+          <div class="gate" id="gate" hidden><button class="btn primary big" id="gate-btn"><svg class="ic"><use href="#i-play"/></svg> Подключиться к просмотру</button></div>
+          <div class="countdown" id="countdown" hidden></div>
+          <div class="floaters" id="floaters"></div>
+
+          <div class="controls" id="controls">
+            <button id="c-play" aria-label="Пуск / пауза"><svg class="ic"><use href="#i-play"/></svg></button>
+            <span class="time" id="c-cur">0:00</span>
+            <input class="seek" id="c-seek" type="range" min="0" max="1000" value="0" aria-label="Перемотка">
+            <span class="time" id="c-dur">0:00</span>
+            <span class="rate-wrap"><select id="c-rate" aria-label="Скорость">
+              <option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option>
+              <option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option>
+            </select></span>
+            <button id="c-mute" aria-label="Звук"><svg class="ic"><use href="#i-vol"/></svg></button>
+            <input class="vol" id="c-vol" type="range" min="0" max="100" value="80" aria-label="Громкость">
+            <button id="c-full" aria-label="На весь экран"><svg class="ic"><use href="#i-full"/></svg></button>
+          </div>
+        </div>
+
+        <div class="below dim">
+          <div class="row-glass glass" id="reactions">
+            <span class="label">Реакции</span>
+            <button class="emoji-btn" data-emoji="❤️" aria-label="Сердце">❤️</button>
+            <button class="emoji-btn" data-emoji="😂" aria-label="Смех">😂</button>
+            <button class="emoji-btn" data-emoji="😮" aria-label="Ого">😮</button>
+            <button class="emoji-btn" data-emoji="😢" aria-label="Грусть">😢</button>
+            <button class="emoji-btn" data-emoji="👏" aria-label="Аплодисменты">👏</button>
+            <button class="emoji-btn" data-emoji="🔥" aria-label="Огонь">🔥</button>
+            <button class="emoji-btn" data-emoji="🍿" aria-label="Попкорн">🍿</button>
+            <button class="emoji-btn" data-emoji="🤯" aria-label="Взрыв мозга">🤯</button>
+            <button class="emoji-btn" data-emoji="😴" aria-label="Скучно">😴</button>
+            <button class="emoji-btn" data-emoji="👀" aria-label="Глаза">👀</button>
+          </div>
+          <div class="row-glass glass" id="party">
+            <span class="label">Вечеринка</span>
+            <button class="chip-btn" data-party="confetti">🎉 Конфетти</button>
+            <button class="chip-btn" data-party="popcorn">🍿 Попкорн</button>
+            <button class="chip-btn" data-party="shake">🌋 Землетрясение</button>
+            <button class="chip-btn" data-party="disco">🪩 Диско</button>
+          </div>
+          <div class="row-glass glass" id="hostbar" hidden>
+            <span class="label">Хост</span>
+            <button class="chip-btn" id="start-countdown">⏳ Старт через 3…2…1</button>
+            <button class="chip-btn" id="toggle-open">🎮 Пульт у всех</button>
+            <span class="spacer"></span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side glass dim">
+        <nav class="tabs">
+          <button class="active" data-tab="chat">💬 Чат <i id="unread"></i></button>
+          <button data-tab="people">👥 Люди <i id="count"></i></button>
+        </nav>
+        <div class="tabpane active" id="tab-chat">
+          <div id="messages"></div>
+          <form id="chat-form">
+            <input class="input" id="chat-input" maxlength="300" placeholder="Сообщение…" autocomplete="off">
+            <button class="icon-btn" type="submit" aria-label="Отправить"><svg class="ic"><use href="#i-send"/></svg></button>
+          </form>
+        </div>
+        <div class="tabpane" id="tab-people">
+          <ul id="people"></ul>
+          <p class="hint" id="people-hint"></p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</main>
+
+<!-- ===================== SETTINGS ===================== -->
+<div class="drawer" id="settings" hidden>
+  <div class="drawer-backdrop" data-close></div>
+  <aside class="drawer-panel glass" role="dialog" aria-modal="true" aria-label="Настройки">
+    <header>
+      <h2>Настройки</h2>
+      <button class="icon-btn" data-close aria-label="Закрыть"><svg class="ic"><use href="#i-x"/></svg></button>
+    </header>
+
+    <div class="drawer-body">
+      <section>
+        <h3>Тема</h3>
+        <div class="swatches" id="theme-swatches"></div>
+      </section>
+
+      <section>
+        <h3>Акцентный цвет</h3>
+        <div class="acc-row" id="accent-swatches"></div>
+      </section>
+
+      <section>
+        <h3>Жидкое стекло</h3>
+        <div style="display:grid;gap:6px">
+          <label class="slider-row">Размытие <input type="range" id="s-blur" min="0" max="60"><output id="o-blur"></output></label>
+          <label class="slider-row">Прозрачность <input type="range" id="s-glass" min="2" max="45"><output id="o-glass"></output></label>
+          <label class="slider-row">Скругление <input type="range" id="s-radius" min="6" max="38"><output id="o-radius"></output></label>
+        </div>
+      </section>
+
+      <section>
+        <h3>Анимации</h3>
+        <div class="seg" id="seg-motion">
+          <button data-v="full">Полные</button><button data-v="calm">Спокойные</button><button data-v="off">Выкл.</button>
+        </div>
+        <div class="seg" id="seg-bg">
+          <button data-v="blobs">Капли</button><button data-v="stars">Звёзды</button><button data-v="grid">Сетка</button><button data-v="none">Нет</button>
+        </div>
+      </section>
+
+      <section>
+        <h3>Эффекты</h3>
+        <label class="toggle"><span>Конфетти и эффекты<small>Вечеринки, приветствия, салюты</small></span><input type="checkbox" class="switch" id="t-confetti"></label>
+        <label class="toggle"><span>Звуки<small>Сообщения, реакции, обратный отсчёт</small></span><input type="checkbox" class="switch" id="t-sound"></label>
+        <label class="toggle"><span>Режим кино<small>Интерфейс тускнеет, пока играет видео</small></span><input type="checkbox" class="switch" id="t-cinema"></label>
+      </section>
+
+      <section>
+        <h3>Профиль</h3>
+        <input class="input" id="s-nick" maxlength="24" placeholder="Ник в комнатах" autocomplete="nickname">
+        <button class="btn" id="logout" style="margin-top:12px" hidden>Выйти из аккаунта</button>
+      </section>
+    </div>
+
+    <footer>
+      <span class="saved" id="saved"></span>
+      <button class="btn" id="reset-settings">Сбросить</button>
+    </footer>
+  </aside>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
