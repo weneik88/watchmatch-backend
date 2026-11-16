@@ -188,6 +188,7 @@ html[data-bg="grid"]  .bg .grid  { display: block; }
 .icon-btn:hover { background: rgba(var(--ink), .18); transform: scale(1.08) rotate(var(--rot, 0deg)); }
 .icon-btn:active { transform: scale(.92); }
 .icon-btn.sm { width: 2rem; height: 2rem; }
+.icon-btn.on { background: rgba(var(--accent-rgb), .3); border-color: rgba(var(--accent-rgb), .85); }
 #open-settings, #open-settings-room { --rot: 18deg; }
 
 .input {
@@ -197,6 +198,7 @@ html[data-bg="grid"]  .bg .grid  { display: block; }
   transition: border-color .25s, box-shadow .25s, background .25s;
 }
 .input::placeholder { color: var(--fg-dim); opacity: .8; }
+.input:disabled { opacity: .55; cursor: not-allowed; }
 .input:focus { outline: none; border-color: rgba(var(--accent-rgb), .9); box-shadow: 0 0 0 4px rgba(var(--accent-rgb), .22), inset 0 2px 8px rgba(0,0,0,.1); background: rgba(var(--ink), .13); }
 
 /* ---------- layout ---------- */
@@ -232,7 +234,7 @@ html[data-bg="grid"]  .bg .grid  { display: block; }
 .or::before, .or::after { content: ""; flex: 1; height: 1px; background: rgba(var(--ink), .2); }
 .join { display: flex; gap: 8px; }
 .login-box { display: grid; justify-items: center; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid rgba(var(--ink), .16); }
-.login-box small { color: var(--fg-dim); text-align: center; }
+.login-box small { color: var(--fg-dim); text-align: center; line-height: 1.4; }
 #g-btn { min-height: 44px; display: grid; place-items: center; }
 .features { list-style: none; padding: 0; margin: 14px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; width: min(900px, 100%); }
 .features li { padding: 18px; text-align: left; animation: viewIn .7s var(--ease-out) both; animation-delay: calc(var(--i) * 110ms + 250ms); transition: transform .4s var(--ease-spring); }

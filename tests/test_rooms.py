@@ -123,14 +123,39 @@ def test_late_joiner_gets_current_state_and_chat():
 
 # --- permissions ---------------------------------------------------------------------
 
-def test_non_host_cannot_control_until_opened():
-    room, _ = make_room(2)
+def test_anyone_can_load_a_video():
+    room, _ = make_room(3)
     outs = room.handle("m1", {"t": "load", "url": "https://youtu.be/dQw4w9WgXcQ"}, T0 + 10)
-    assert outs[0].payload["code"] == "forbidden" and room.state["src"] is None
+    assert outs[0].payload["t"] == "state" and outs[0].to == "all"
+    assert room.state["src"]["id"] == "dQw4w9WgXcQ"
+    assert room.host_id == "m0"  # loading does not take the host role
+    # a bad link is still rejected for a non-host, with a clear error
+    bad = room.handle("m2", {"t": "load", "url": "javascript:alert(1)"}, T0 + 20)
+    assert bad[0].payload["code"] == "bad_url"
 
-    room.handle("m0", {"t": "control", "open": True}, T0 + 20)
-    outs = room.handle("m1", {"t": "load", "url": "https://youtu.be/dQw4w9WgXcQ"}, T0 + 30)
-    assert outs[0].payload["t"] == "state" and room.state["src"]["id"] == "dQw4w9WgXcQ"
+
+def test_load_is_rate_limited_for_everyone():
+    room, _ = make_room(2)
+    room.members["m1"].buckets["any"].tokens = 1000  # isolate the per-kind limit
+    codes = []
+    for i in range(40):
+        room.members["m1"].buckets["any"].tokens = 1000
+        out = room.handle("m1", {"t": "load", "url": f"https://example.com/{i}.mp4"}, T0)
+        codes.append(out[0].payload.get("code"))
+    assert "rate" in codes
+
+
+def test_non_host_cannot_control_playback_until_opened():
+    room, _ = make_room(2)
+    room.handle("m1", {"t": "load", "url": "https://youtu.be/dQw4w9WgXcQ"}, T0 + 10)
+    for msg in ({"t": "play"}, {"t": "pause"}, {"t": "seek", "pos": 5}, {"t": "rate", "rate": 1.5}, {"t": "countdown"}):
+        outs = room.handle("m1", msg, T0 + 20)
+        assert outs and outs[0].payload["code"] == "forbidden", msg
+    assert room.state["playing"] is False and room.state["pos"] == 0
+
+    room.handle("m0", {"t": "control", "open": True}, T0 + 30)
+    outs = room.handle("m1", {"t": "play", "pos": 3}, T0 + 40)
+    assert outs[0].payload["t"] == "state" and room.state["playing"] is True
 
 
 def test_only_host_can_open_control_or_transfer():

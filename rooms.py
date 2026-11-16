@@ -10,7 +10,7 @@ Protocol (client -> server), all messages are JSON objects with a "t" field:
     react   {emoji}
     party   {kind}                   confetti | popcorn | shake | disco
     rename  {name}
-    load    {url}                    controller only
+    load    {url}                    anyone in the room
     play    {pos?}                   controller only
     pause   {pos?}                   controller only
     seek    {pos}                    controller only
@@ -388,9 +388,10 @@ class Room:
         })
 
     def _on_load(self, member: Member, msg, now_ms) -> List[Out]:
-        denied = self._check_control(member, now_ms)
-        if denied:
-            return [denied]
+        # Anyone in the room may pick the video (everybody here is signed in).
+        # Play, pause and seek still belong to the host unless the remote is opened.
+        if not member.buckets["control"].take(now_ms / 1000.0):
+            return [_error(member.id, "rate", "Слишком много команд")]
         src = parse_source(msg.get("url"))
         if src is None:
             return [_error(member.id, "bad_url", "Не похоже на ссылку на видео")]

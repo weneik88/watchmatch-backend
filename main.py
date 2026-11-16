@@ -11,7 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from auth import AuthError, GoogleVerifier, bearer, make_token, verify_token
-from rooms import ROOM_ID_RE, Member, Out, Room, RoomFull, Rooms, TooManyRooms, clean_name, now_ms
+from identity import LoginRequired, resolve_identity
+from rooms import ROOM_ID_RE, Member, Out, Room, RoomFull, Rooms, TooManyRooms, now_ms
 from store import Store
 
 log = logging.getLogger("watchmatch")
@@ -20,8 +21,8 @@ log = logging.getLogger("watchmatch")
 #
 #   FRONTEND_ORIGIN   comma separated list of allowed site origins, e.g.
 #                     https://watchmatchh.vercel.app,http://localhost:3000
-#   GOOGLE_CLIENT_ID  OAuth "Web application" client id; without it only guest
-#                     mode works
+#   GOOGLE_CLIENT_ID  OAuth "Web application" client id. Sign-in is mandatory, so
+#                     without it nobody can create or join a room
 #   SESSION_SECRET    long random string used to sign session tokens. If unset a
 #                     random one is generated on every start, which logs everybody out
 #                     on each restart
@@ -40,6 +41,8 @@ SECRET = (_secret_env or secrets.token_urlsafe(48)).encode("utf-8")
 
 store = Store(os.getenv("DB_PATH", "watchmatch.db"))
 verifier = GoogleVerifier(GOOGLE_CLIENT_ID) if GOOGLE_CLIENT_ID else None
+if verifier is None:
+    log.warning("GOOGLE_CLIENT_ID is not set: sign-in is required, so nobody can enter a room")
 rooms = Rooms(max_members=MAX_MEMBERS)
 
 app = FastAPI(title="WatchMatch backend")
@@ -173,17 +176,6 @@ async def fatal(ws: WebSocket, code: str, message: str) -> None:
         pass
 
 
-async def identify(hello: Dict[str, Any]):
-    """Work out who is joining: a signed-in user or a guest."""
-    uid = verify_token(hello.get("token"), SECRET)
-    user = await asyncio.to_thread(store.get_user, uid) if uid else None
-    if user:
-        nickname = user["settings"].get("nickname")
-        avatar = user["avatar"] if isinstance(user["avatar"], str) and user["avatar"].startswith("https://") else None
-        return clean_name(nickname or user["name"], "Гость"), avatar, user["id"]
-    return clean_name(hello.get("name"), f"Гость-{secrets.randbelow(900) + 100}"), None, None
-
-
 @app.websocket("/ws/{room_id}")
 async def room_socket(websocket: WebSocket, room_id: str):
     if not ROOM_ID_RE.match(room_id) or not origin_allowed(
@@ -207,7 +199,13 @@ async def room_socket(websocket: WebSocket, room_id: str):
             await fatal(websocket, "bad_hello", "Ожидалось приветствие")
             return
 
-        name, avatar, user_id = await identify(hello)
+        # Sign-in is mandatory. This happens before the room is created, so an
+        # anonymous client can neither create nor join a room.
+        try:
+            name, avatar, user_id = await asyncio.to_thread(resolve_identity, hello, SECRET, store.get_user)
+        except LoginRequired:
+            await fatal(websocket, "login_required", "Войдите через Google, чтобы зайти в комнату")
+            return
 
         try:
             room = rooms.get_or_create(room_id)

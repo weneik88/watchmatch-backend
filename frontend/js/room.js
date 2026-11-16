@@ -43,9 +43,11 @@ const REASON = {
 };
 
 export class RoomView {
-  constructor({ getIdentity, onExit }) {
+  constructor({ getIdentity, onExit, onAuthLost, onStreamerChange }) {
     this.getIdentity = getIdentity;
     this.onExit = onExit;
+    this.onAuthLost = onAuthLost;             // the server says our session is no longer valid
+    this.onStreamerChange = onStreamerChange; // lets the app keep the address bar in step
     this.sock = null;
     this.player = new Player({
       video: $('video'),
@@ -62,6 +64,7 @@ export class RoomView {
   reset() {
     this.code = null;
     this.me = null;
+    this.online = false; // true between the server's welcome and the next disconnect
     this.members = [];
     this.hostId = null;
     this.open = false;
@@ -84,7 +87,7 @@ export class RoomView {
   enter(code) {
     this.leave(true);
     this.code = code;
-    $('room-code').textContent = code;
+    this.renderCode();
     $('messages').replaceChildren();
     $('people').replaceChildren();
     $('avatars').replaceChildren();
@@ -119,7 +122,23 @@ export class RoomView {
     if (!silent) this.onExit?.();
   }
 
+  // Streamer mode (on by default): the room code is never drawn on screen.
+  renderCode() {
+    const on = !!S.get().streamer;
+    $('room-code').textContent = this.code ? (on ? '••••••' : this.code) : '';
+    const b = $('streamer-toggle');
+    b.setAttribute('aria-pressed', String(on));
+    b.classList.toggle('on', on);
+    b.title = on ? 'Режим стримера включён: код комнаты скрыт' : 'Режим стримера выключен: код комнаты виден';
+    b.querySelector('use').setAttribute('href', on ? '#i-eyeoff' : '#i-eye');
+  }
+
   setConn(kind, status) {
+    if (kind !== 'on') {   // dropped or not yet welcomed: controls stay off until the server says hello
+      this.online = false;
+      this.me = null;
+      this.applyPermissions();
+    }
     const d = $('conn');
     d.className = `dot ${kind === 'on' ? '' : kind}`;
     d.title = kind === 'on' ? 'Подключено' : status === 'reconnecting' ? 'Переподключаемся…' : kind === 'off' ? 'Отключено' : 'Подключаемся…';
@@ -155,6 +174,7 @@ export class RoomView {
       case 'state': this.onState(m); return;
       case 'countdown': this.onCountdown(m); return;
       case 'error':
+        if (m.code === 'login_required') { this.leave(true); this.onAuthLost?.(m.message); return; }
         fx.toast(m.message || 'Ошибка', 'err');
         fx.sound('err');
         if (m.fatal) setTimeout(() => this.leave(), 1800);
@@ -165,6 +185,7 @@ export class RoomView {
 
   onWelcome(m) {
     this.me = m.you;
+    this.online = true;
     this.state = m.state;
     this.members = m.members;
     this.hostId = m.host;
@@ -172,7 +193,8 @@ export class RoomView {
     this.blocked = false;
     $('messages').replaceChildren();
     for (const c of m.chat || []) this.addChat(c, true);
-    this.sys(`🎟 Комната ${this.code}. Отправь ссылку другу: кнопка 🔗 сверху`);
+    // The code is deliberately never written into the chat, so toggling streamer mode can't leak it.
+    this.sys('🎟 Ты в комнате. Чтобы позвать друга, нажми 🔗 сверху');
     this.renderMembers();
     this.applyPermissions();
     this.renderSource();
@@ -314,16 +336,17 @@ export class RoomView {
   renderSource() {
     const has = !!this.state.src;
     $('player-empty').hidden = has;
-    $('empty-text').textContent = this.can
+    $('empty-text').textContent = this.online
       ? 'Вставь ссылку на видео, и оно появится у всех в комнате.'
-      : 'Ждём, пока хост выберет видео.';
+      : 'Подключаемся к серверу… Бесплатному серверу нужно до минуты, чтобы проснуться.';
   }
 
   applyPermissions() {
     const can = this.can;
-    $('source-input').disabled = !can;
-    $('source-form').querySelector('button').disabled = !can;
-    $('source-input').placeholder = can ? 'Ссылка на YouTube или видео (.mp4, .webm)' : 'Видео выбирает хост 👑';
+    // Anyone in the room can paste a link and load a video; play/pause/seek stay with the host.
+    $('source-input').disabled = false;
+    $('source-form').querySelector('button').disabled = false;
+    $('source-input').placeholder = this.online ? 'Ссылка на YouTube или видео (.mp4, .webm)' : 'Подключаемся к серверу…';
     for (const id of ['c-play', 'c-seek', 'c-rate']) $(id).disabled = !can;
     $('hostbar').hidden = !can;
     $('toggle-open').hidden = !this.isHost;
@@ -524,6 +547,14 @@ export class RoomView {
     }
     $('start-countdown').addEventListener('click', () => this.send({ t: 'countdown' }));
     $('toggle-open').addEventListener('click', () => this.send({ t: 'control', open: !this.open }));
+
+    $('streamer-toggle').addEventListener('click', () => S.set({ streamer: !S.get().streamer }));
+    S.onChange((_s, keys) => {
+      if (!keys.includes('streamer')) return;
+      this.renderCode();
+      this.onStreamerChange?.();
+    });
+    this.renderCode();
 
     $('leave').addEventListener('click', () => { if (location.hash) location.hash = ''; else this.leave(); });
     $('copy-link').addEventListener('click', () => this.copyLink());

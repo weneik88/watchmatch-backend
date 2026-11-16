@@ -52,7 +52,7 @@ export function initSettingsUI({ onLogout }) {
       if (b) S.set({ [key]: b.dataset.v });
     });
   }
-  for (const key of ['confetti', 'sound', 'cinema']) {
+  for (const key of ['confetti', 'sound', 'cinema', 'streamer']) {
     $(`t-${key}`).addEventListener('change', (e) => {
       S.set({ [key]: e.target.checked });
       if (key === 'sound' && e.target.checked) fx.sound('join');
@@ -80,7 +80,7 @@ export function initSettingsUI({ onLogout }) {
     for (const [id, key] of [['seg-motion', 'motion'], ['seg-bg', 'bg']]) {
       for (const b of $(id).children) b.classList.toggle('on', b.dataset.v === s[key]);
     }
-    for (const key of ['confetti', 'sound', 'cinema']) $(`t-${key}`).checked = !!s[key];
+    for (const key of ['confetti', 'sound', 'cinema', 'streamer']) $(`t-${key}`).checked = !!s[key];
     if (document.activeElement !== nick) nick.value = s.nickname;
   }
   S.onChange((_s, keys) => {

@@ -131,11 +131,17 @@ def test_settings_keep_valid_drop_invalid():
     out = sanitize_settings({
         "theme": "sunset", "accent": "#FF00AA", "blur": 999, "glass": -5, "radius": 20.7,
         "motion": "calm", "bg": "stars", "confetti": False, "sound": "yes", "cinema": True,
-        "nickname": "  Аня \n  Т ", "evil": "<script>", "__proto__": {"x": 1},
+        "streamer": False, "nickname": "  Аня \n  Т ", "evil": "<script>", "__proto__": {"x": 1},
     })
     assert out == {"theme": "sunset", "accent": "#ff00aa", "blur": 60, "glass": 2, "radius": 20,
                    "motion": "calm", "bg": "stars", "confetti": False, "cinema": True,
-                   "nickname": "Аня Т"}
+                   "streamer": False, "nickname": "Аня Т"}
+
+
+@pytest.mark.parametrize("value", ["yes", 1, 0, None, "false", []])
+def test_settings_streamer_must_be_a_real_boolean(value):
+    assert "streamer" not in sanitize_settings({"streamer": value})
+    assert sanitize_settings({"streamer": True}) == {"streamer": True}
 
 
 @pytest.mark.parametrize("raw", [None, 5, "x", [], {"theme": "nope", "accent": "red", "blur": "5",

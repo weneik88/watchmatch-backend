@@ -21,6 +21,7 @@ export const DEFAULTS = {
   blur: 26, glass: 12, radius: 22,
   motion: 'full', bg: 'blobs',
   confetti: true, sound: true, cinema: false,
+  streamer: true,   // hide the room code on screen and in the address bar (on by default)
   nickname: '',
 };
 
@@ -43,7 +44,7 @@ function clean(raw) {
   for (const [k, lo, hi] of [['blur', 0, 60], ['glass', 2, 45], ['radius', 6, 38]]) {
     if (typeof raw[k] === 'number' && Number.isFinite(raw[k])) out[k] = Math.round(Math.min(hi, Math.max(lo, raw[k])));
   }
-  for (const k of ['confetti', 'sound', 'cinema']) if (typeof raw[k] === 'boolean') out[k] = raw[k];
+  for (const k of ['confetti', 'sound', 'cinema', 'streamer']) if (typeof raw[k] === 'boolean') out[k] = raw[k];
   if (typeof raw.nickname === 'string') out.nickname = raw.nickname.replace(/\s+/g, ' ').trim().slice(0, 24);
   return out;
 }

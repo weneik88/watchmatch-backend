@@ -44,7 +44,7 @@ def sanitize_settings(raw: Any) -> Dict[str, Any]:
             if v is not None:
                 out[key] = v
 
-    for key in ("confetti", "sound", "cinema"):
+    for key in ("confetti", "sound", "cinema", "streamer"):
         if isinstance(raw.get(key), bool):
             out[key] = raw[key]
 

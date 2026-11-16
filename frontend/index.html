@@ -24,6 +24,8 @@
   <symbol id="i-back" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
 </svg>
 
 <div class="bg" id="bg" aria-hidden="true">
@@ -54,19 +56,15 @@
       <p class="hero-sub" id="tagline"></p>
 
       <div class="hero-card glass">
-        <div class="login-box" id="login-box" hidden>
-          <div id="g-btn"></div>
-          <small>Войди через Google, чтобы сохранить тему, ник и аватар на всех устройствах</small>
+        <div class="login-box" id="login-box">
+          <div id="g-btn" hidden></div>
+          <small id="login-note" role="status">Подключаемся к серверу…</small>
         </div>
-        <div class="field" id="name-field">
-          <label for="guest-name">Твоё имя</label>
-          <input class="input" id="guest-name" maxlength="24" placeholder="Как тебя звать?" autocomplete="nickname">
-        </div>
-        <button class="btn primary big" id="create-room">Создать комнату</button>
+        <button class="btn primary big" id="create-room" disabled>Создать комнату</button>
         <div class="or"><span>или</span></div>
         <form class="join" id="join-form">
-          <input class="input" id="join-code" placeholder="Код или ссылка на комнату" autocomplete="off" autocapitalize="off" spellcheck="false">
-          <button class="btn" type="submit">Войти</button>
+          <input class="input" id="join-code" placeholder="Код или ссылка на комнату" autocomplete="off" autocapitalize="off" spellcheck="false" disabled>
+          <button class="btn" type="submit" disabled>Войти</button>
         </form>
       </div>
 
@@ -85,7 +83,8 @@
       <div class="room-id">
         <span class="dot wait" id="conn" title="Соединение"></span>
         <b id="room-code"></b>
-        <button class="icon-btn sm" id="copy-link" aria-label="Скопировать ссылку"><svg class="ic"><use href="#i-link"/></svg></button>
+        <button class="icon-btn sm" id="streamer-toggle" aria-label="Режим стримера" aria-pressed="true" title="Режим стримера: код комнаты скрыт"><svg class="ic"><use href="#i-eyeoff"/></svg></button>
+        <button class="icon-btn sm" id="copy-link" aria-label="Скопировать ссылку" title="Скопировать ссылку-приглашение"><svg class="ic"><use href="#i-link"/></svg></button>
       </div>
       <div class="avatars" id="avatars"></div>
       <div class="top-actions">
@@ -222,6 +221,11 @@
         <label class="toggle"><span>Конфетти и эффекты<small>Вечеринки, приветствия, салюты</small></span><input type="checkbox" class="switch" id="t-confetti"></label>
         <label class="toggle"><span>Звуки<small>Сообщения, реакции, обратный отсчёт</small></span><input type="checkbox" class="switch" id="t-sound"></label>
         <label class="toggle"><span>Режим кино<small>Интерфейс тускнеет, пока играет видео</small></span><input type="checkbox" class="switch" id="t-cinema"></label>
+      </section>
+
+      <section>
+        <h3>Приватность</h3>
+        <label class="toggle"><span>Режим стримера<small>Прячет код комнаты на экране и в адресной строке</small></span><input type="checkbox" class="switch" id="t-streamer"></label>
       </section>
 
       <section>
